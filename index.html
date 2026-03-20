@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Type-phoon: City Safeguard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: #080b10;
+      color: #fff;
+      font-family: 'Exo 2', sans-serif;
+    }
+
+    /* ═══════════════════════════════
+       BACKGROUND — fully self-contained
+       dark rocky look via canvas + CSS
+    ═══════════════════════════════ */
+    #bg-canvas {
+      position: fixed; inset: 0; z-index: 0;
+      width: 100%; height: 100%;
+    }
+
+    .bg-overlay {
+      position: fixed; inset: 0; z-index: 1;
+      /* If WALLPAPER.jpg exists in same folder, it shows on top */
+      background-image: url(WALLPAPER.jpg);
+      background-size: cover;
+      background-position: center;
+    }
+
+    .bg-tint {
+      position: fixed; inset: 0; z-index: 2;
+      background:
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+
+    .bg-glow {
+      position: fixed; inset: 0; z-index: 2;
+      background:
+        radial-gradient(ellipse 80% 55% at 50% -5%, rgba(0,130,210,0.14) 0%, transparent 65%),
+        radial-gradient(ellipse 55% 45% at 85% 108%, rgba(0,200,170,0.07) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    /* ═══════════════════════════════
+       BOTTOM WAVES
+    ═══════════════════════════════ */
+    .waves-wrap {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 110px;
+      z-index: 10;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .wave-svg {
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 200%; height: 100%;
+    }
+
+    .w1 { animation: waveMove  9s linear infinite;         opacity: 0.55; }
+    .w2 { animation: waveMove 14s linear infinite reverse; opacity: 0.38; }
+    .w3 { animation: waveMove  6s linear infinite;         opacity: 0.22; }
+
+    @keyframes waveMove {
+      from { transform: translateX(0);    }
+      to   { transform: translateX(-50%); }
+    }
+
+    /* ═══════════════════════════════
+       LAYOUT
+    ═══════════════════════════════ */
+    .page {
+      position: relative; z-index: 5;
+      width: 100%; height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 20px 40px 130px;
+    }
+
+    /* ═══════════════════════════════
+       TITLE
+    ═══════════════════════════════ */
+    .title-block {
+      text-align: center;
+      margin-bottom: 22px;
+      flex-shrink: 0;
+      animation: fadeDown 0.9s cubic-bezier(.16,1,.3,1) both;
+    }
+
+    .game-eyebrow {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px; letter-spacing: 6px;
+      text-transform: uppercase;
+      color: rgba(0,210,255,0.6);
+      margin-bottom: 8px;
+    }
+
+    .game-title {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: clamp(26px, 4.5vw, 58px);
+      font-weight: 900; line-height: 1.1;
+      background: linear-gradient(135deg, #e0f7ff 0%, #00d2ff 40%, #7b9fff 70%, #c5abff 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 24px rgba(0,200,255,0.4));
+    }
+
+    .game-subtitle {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: clamp(13px, 2vw, 22px);
+      letter-spacing: 5px;
+      color: rgba(160,200,255,0.55);
+      margin-top: 6px;
+    }
+
+    /* ═══════════════════════════════
+       GLASS CARD
+    ═══════════════════════════════ */
+    .glass-card {
+      background: rgba(255,255,255,0.014);
+      backdrop-filter: blur(6px) saturate(110%);
+      -webkit-backdrop-filter: blur(6px) saturate(110%);
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 26px;
+      padding: 34px 48px;
+      width: 100%; max-width: 1200px;
+      flex-shrink: 0;
+      box-shadow:
+        0 0 0 1px rgba(0,200,255,0.1),
+        0 12px 80px rgba(3,154,196,0.14),
+        inset 0 1px 0 rgba(3,154,196,0.99);
+      animation: fadeUp 1s 0.25s cubic-bezier(.16,1,.3,1) both;
+    }
+
+    .card-header {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .card-header-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, #00d2ff, #7b9fff);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+      box-shadow: 0 0 18px rgba(0,200,255,0.35);
+    }
+
+    .card-header h2 {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: clamp(20px, 2.5vw, 34px);
+      font-weight: 700; letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(65,145,211,0.9);
+    }
+
+    /* ═══════════════════════════════
+       STEPS GRID
+    ═══════════════════════════════ */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px; margin-bottom: 26px;
+    }
+
+    .step {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 18px;
+      padding: 22px 20px;
+      position: relative; overflow: hidden;
+      transition: border-color .3s, background .3s, transform .3s;
+      cursor: default;
+      min-height: 185px;
+      display: flex; flex-direction: column;
+    }
+
+    .step::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, transparent, rgba(0,200,255,0.6), transparent);
+      opacity: 0; transition: opacity .3s;
+    }
+
+    .step:hover {
+      border-color: rgba(0,200,255,0.3);
+      background: rgba(0,180,255,0.08);
+      transform: translateY(-4px);
+    }
+    .step:hover::before { opacity: 1; }
+
+    .step-num {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 34px; font-weight: 900;
+      color: rgba(0,208,255,0.44);
+      line-height: 1; margin-bottom: 8px;
+    }
+
+    .step-icon  { font-size: 26px; margin-bottom: 8px; display: block; }
+
+    .step-title {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 15px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: rgba(0,210,255,0.9); margin-bottom: 8px;
+    }
+
+    .step-desc {
+      font-size: 13px; line-height: 1.6;
+      color: rgba(180,210,240,0.7);
+    }
+
+    .step-desc code {
+      background: rgba(0,200,255,0.1);
+      border: 1px solid rgba(0,200,255,0.25);
+      border-radius: 5px; padding: 2px 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px; color: rgba(0,230,255,0.95);
+    }
+
+    /* ═══════════════════════════════
+       DOWNLOAD BUTTON
+    ═══════════════════════════════ */
+    .btn-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+
+    .btn-download {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 14px 36px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 16px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: #fff;
+      background: linear-gradient(135deg, #0088cc, #0055aa);
+      border: 1px solid rgba(0,180,255,0.4);
+      border-radius: 12px; cursor: pointer; text-decoration: none;
+      transition: all .3s;
+      box-shadow: 0 4px 24px rgba(0,120,255,0.35), inset 0 1px 0 rgba(255,255,255,0.14);
+    }
+
+    .btn-download:hover {
+      background: linear-gradient(135deg, #00aaff, #0077cc);
+      box-shadow: 0 8px 36px rgba(0,170,255,0.5), inset 0 1px 0 rgba(255,255,255,0.18);
+      transform: translateY(-3px);
+    }
+
+    .btn-note {
+      font-family: 'Exo 2', sans-serif;
+      font-size: 13px; color: rgba(150,190,220,0.55); letter-spacing: .5px;
+    }
+
+    /* ═══════════════════════════════
+       DIVIDER + SYSTEM REQS
+    ═══════════════════════════════ */
+    .divider {
+      width: 100%; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0,200,255,0.2), transparent);
+      margin: 20px 0;
+    }
+
+    .req-strip { display: flex; gap: 24px; flex-wrap: wrap; }
+    .req-item  { display: flex; align-items: center; gap: 8px; }
+
+    .req-label {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 11px; letter-spacing: 2.5px;
+      text-transform: uppercase; color: rgba(100,160,200,0.55);
+    }
+
+    .req-value {
+      font-family: 'Exo 2', sans-serif;
+      font-size: 13px; color: rgba(180,215,240,0.75);
+    }
+
+    .req-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(0,200,255,0.4); flex-shrink: 0; }
+
+    /* ═══════════════════════════════
+       ANIMATIONS
+    ═══════════════════════════════ */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 760px) {
+      .steps-grid { grid-template-columns: repeat(2,1fr); }
+      .glass-card { padding: 22px 18px; }
+      .page       { padding: 18px 16px 130px; }
+    }
+
+    ::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- ── Dark rocky canvas background ── -->
+<canvas id="bg-canvas"></canvas>
+<div class="bg-overlay"></div>
+<div class="bg-tint"></div>
+<div class="bg-glow"></div>
+
+<!-- ── Animated bottom waves ── -->
+<div class="waves-wrap">
+  <svg class="wave-svg w1" viewBox="0 0 2880 110" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,55 C240,95 480,15 720,55 C960,95 1200,15 1440,55 C1680,95 1920,15 2160,55 C2400,95 2640,15 2880,55 L2880,110 L0,110 Z" fill="rgba(0,170,255,0.22)"/>
+  </svg>
+  <svg class="wave-svg w2" viewBox="0 0 2880 110" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,75 C360,28 720,105 1080,65 C1440,28 1800,95 2160,60 C2520,28 2700,85 2880,70 L2880,110 L0,110 Z" fill="rgba(0,110,220,0.28)"/>
+  </svg>
+  <svg class="wave-svg w3" viewBox="0 0 2880 110" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,88 C180,48 540,118 900,82 C1260,48 1620,108 1980,76 C2340,48 2640,98 2880,85 L2880,110 L0,110 Z" fill="rgba(0,220,255,0.13)"/>
+  </svg>
+</div>
+
+<!-- ── Page ── -->
+<div class="page">
+
+  <div class="title-block">
+    <p class="game-eyebrow">⚡ Official Release</p>
+    <h1 class="game-title">Type-phoon: City Safeguard</h1>
+    <p class="game-subtitle">Installation Guide</p>
+  </div>
+
+  <div class="glass-card">
+    <div class="card-header">
+      <div class="card-header-icon">📦</div>
+      <h2>How to Install</h2>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">01</div>
+        <span class="step-icon">⬇️</span>
+        <div class="step-title">Download</div>
+        <div class="step-desc">Click the <strong style="color:rgba(0,210,255,0.8)">Download Game</strong> button below to get the <code>.zip</code> file of the game.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <span class="step-icon">📂</span>
+        <div class="step-title">Extract</div>
+        <div class="step-desc">Right-click the downloaded <code>.zip</code> file and select <strong style="color:rgba(0,210,255,0.8)">Extract All</strong> to unzip it into a folder.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <span class="step-icon">🚀</span>
+        <div class="step-title">Launch</div>
+        <div class="step-desc">Open the extracted folder and double-click <code>Type-phoon.exe</code> to start the game.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <span class="step-icon">🎮</span>
+        <div class="step-title">Play</div>
+        <div class="step-desc">No installation needed! The game runs directly. Enjoy defending the city!</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <a class="btn-download" id="dlBtn" href="#" target="_blank" onclick="startDownload(event)">
+        ⬇ &nbsp;Download Game
+      </a>
+      <span class="btn-note">Type-phoon.zip · Windows · ~100 MB</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="req-strip">
+      <div class="req-item"><div class="req-dot"></div><span class="req-label">OS</span><span class="req-value">Windows 10 / 11</span></div>
+      <div class="req-item"><div class="req-dot"></div><span class="req-label">Storage</span><span class="req-value">500 MB free</span></div>
+      <div class="req-item"><div class="req-dot"></div><span class="req-label">RAM</span><span class="req-value">4 GB minimum</span></div>
+      <div class="req-item"><div class="req-dot"></div><span class="req-label">DirectX</span><span class="req-value">Version 11+</span></div>
+      <div class="req-item"><div class="req-dot"></div><span class="req-label">No install required</span><span class="req-value">Just unzip & run ✓</span></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Generate dark rocky canvas background ──────────────────
+(function () {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    draw();
+  }
+
+  function draw() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // Base dark gradient
+    const base = ctx.createLinearGradient(0, 0, 0, H);
+    base.addColorStop(0,   '#0b0f16');
+    base.addColorStop(0.4, '#0e1822');
+    base.addColorStop(0.7, '#0a1418');
+    base.addColorStop(1,   '#060c0e');
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, W, H);
+
+    // Rocky bump noise — multiple passes of bezier "ridges"
+    const ridgeCount = 28;
+    for (let i = 0; i < ridgeCount; i++) {
+      const y    = (H / ridgeCount) * i + Math.random() * (H / ridgeCount);
+      const amp  = 18 + Math.random() * 50;
+      const dark = Math.random() > 0.5;
+      const alpha = 0.03 + Math.random() * 0.07;
+
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      for (let x = 0; x <= W; x += 60) {
+        const cy = y + (Math.random() - 0.5) * amp * 2;
+        const cx1 = x - 30 + (Math.random() - 0.5) * 40;
+        const cx2 = x + 30 + (Math.random() - 0.5) * 40;
+        ctx.bezierCurveTo(cx1, cy - amp, cx2, cy + amp, x + 60, y + (Math.random() - 0.5) * amp);
+      }
+      ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+      ctx.fillStyle = dark
+        ? `rgba(0,0,0,${alpha})`
+        : `rgba(20,40,60,${alpha * 0.6})`;
+      ctx.fill();
+    }
+
+    // Subtle vignette
+    const vignette = ctx.createRadialGradient(W/2, H/2, H*0.2, W/2, H/2, H*0.85);
+    vignette.addColorStop(0, 'rgba(0,0,0,0)');
+    vignette.addColorStop(1, 'rgba(0,0,0,0.55)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+})();
+
+// ── Google Drive large file download bypass ──────────────
+function startDownload(e) {
+  e.preventDefault();
+  const fileId = '1BCjapbgSlIdN41egcwrAPlGydRROdKxp';
+  const url = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&authuser=0&confirm=t`;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Type-phoon.zip';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  // Visual feedback on button
+  const btn = document.getElementById('dlBtn');
+  const original = btn.innerHTML;
+  btn.innerHTML = '⏳ &nbsp;Starting Download...';
+  btn.style.opacity = '0.7';
+  setTimeout(() => {
+    btn.innerHTML = '✅ &nbsp;Download Started!';
+    btn.style.opacity = '1';
+    setTimeout(() => { btn.innerHTML = original; btn.style.opacity = '1'; }, 3000);
+  }, 1500);
+}
+</script>
+
+</body>
+</html>
